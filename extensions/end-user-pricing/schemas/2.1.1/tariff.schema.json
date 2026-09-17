@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Go-Electra/ocpi-extensions/extensions/end-user-pricing/schemas/2.1.1/tariff.schema.json",
+  "title": "OCPI 2.1.1 Tariff",
+  "description": "The standard OCPI 2.1.1 Tariff object, unchanged. Used as end_user_tariff by the end-user pricing display extension. Unlike 2.2.1 there is no country_code/party_id, no type, no vat on price components and no min/max price — so prices MUST be VAT-inclusive.",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 36 },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{3}$",
+      "description": "ISO 4217 code of the currency the eMSP bills the driver in."
+    },
+    "tariff_alt_text": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/displayText" },
+      "description": "Ignored for rendering by the CPO. See the rendering section of the spec."
+    },
+    "tariff_alt_url": { "type": "string", "format": "uri" },
+    "elements": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/tariffElement" },
+      "description": "MUST contain at least one element. A Tariff with no elements MUST NOT be sent."
+    },
+    "energy_mix": { "type": "object" },
+    "last_updated": { "type": "string", "format": "date-time" }
+  },
+  "required": ["id", "currency", "elements", "last_updated"],
+  "$defs": {
+    "displayText": {
+      "type": "object",
+      "properties": {
+        "language": { "type": "string", "pattern": "^[A-Za-z]{2}$" },
+        "text": { "type": "string", "maxLength": 512 }
+      },
+      "required": ["language", "text"]
+    },
+    "tariffElement": {
+      "type": "object",
+      "properties": {
+        "price_components": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/priceComponent" }
+        },
+        "restrictions": { "$ref": "#/$defs/tariffRestrictions" }
+      },
+      "required": ["price_components"]
+    },
+    "priceComponent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ENERGY", "FLAT", "PARKING_TIME", "TIME"],
+          "description": "TariffDimensionType. All four values are renderable by the CPO."
+        },
+        "price": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Price per unit, INCLUDING VAT. OCPI 2.1.1 has no vat field, so an excluding-VAT price would understate what the driver pays."
+        },
+        "step_size": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["type", "price", "step_size"]
+    },
+    "tariffRestrictions": {
+      "type": "object",
+      "description": "Standard OCPI 2.1.1 TariffRestrictions. min_duration on a parking component is rendered as a threshold; complex combinations may not be rendered.",
+      "properties": {
+        "start_time": { "type": "string", "pattern": "^[0-9]{2}:[0-9]{2}$" },
+        "end_time": { "type": "string", "pattern": "^[0-9]{2}:[0-9]{2}$" },
+        "start_date": { "type": "string" },
+        "end_date": { "type": "string" },
+        "min_kwh": { "type": "number", "minimum": 0 },
+        "max_kwh": { "type": "number", "minimum": 0 },
+        "min_power": { "type": "number", "minimum": 0 },
+        "max_power": { "type": "number", "minimum": 0 },
+        "min_duration": { "type": "integer", "minimum": 0 },
+        "max_duration": { "type": "integer", "minimum": 0 },
+        "day_of_week": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+          }
+        }
+      }
+    }
+  }
+}

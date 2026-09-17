@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Go-Electra/ocpi-extensions/extensions/end-user-pricing/schemas/2.1.1/session-push-response.schema.json",
+  "title": "OCPI 2.1.1 response envelope of PUT/PATCH /sessions/{session_id} with the end-user pricing extension",
+  "type": "object",
+  "properties": {
+    "data": { "$ref": "#/$defs/extensionData" },
+    "status_code": { "type": "integer" },
+    "status_message": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  },
+  "required": ["status_code", "timestamp"],
+  "$defs": {
+    "extensionData": {
+      "type": "object",
+      "description": "Normally empty in standard OCPI. The extension fields ride here.",
+      "properties": {
+        "end_user_tariff": {
+          "$ref": "tariff.schema.json",
+          "description": "EXTENSION, optional. Send only when the tariff changed or when the authorize response could not carry it."
+        },
+        "end_user_total_cost": {
+          "type": "number",
+          "minimum": 0,
+          "description": "EXTENSION. Cumulative, VAT-INCLUSIVE cost of the session to the driver, reflecting the session state in the request being answered. Mirrors the type of 2.1.1 Session.total_cost."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{3}$",
+          "description": "EXTENSION. ISO 4217 code. REQUIRED when end_user_total_cost is present."
+        }
+      },
+      "dependentRequired": {
+        "end_user_total_cost": ["currency"]
+      }
+    }
+  }
+}

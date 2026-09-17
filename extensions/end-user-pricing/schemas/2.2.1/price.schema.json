@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Go-Electra/ocpi-extensions/extensions/end-user-pricing/schemas/2.2.1/price.schema.json",
+  "title": "OCPI 2.2.1 Price",
+  "type": "object",
+  "properties": {
+    "excl_vat": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price excluding VAT."
+    },
+    "incl_vat": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price including VAT. SHOULD be provided: this is the figure shown to the driver."
+    }
+  },
+  "required": ["excl_vat"],
+  "additionalProperties": false
+}

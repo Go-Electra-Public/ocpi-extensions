@@ -1,0 +1,30 @@
+{
+  "data": {
+    "allowed": "ALLOWED",
+    "location": {
+      "location_id": "LOC0001",
+      "evse_uids": ["FR*ELC*E000101"]
+    },
+    "end_user_tariff": {
+      "id": "cmp-elc-dc-2026-09",
+      "currency": "EUR",
+      "elements": [
+        {
+          "price_components": [
+            { "type": "ENERGY", "price": 0.59, "step_size": 1 }
+          ]
+        },
+        {
+          "price_components": [
+            { "type": "PARKING_TIME", "price": 7.2, "step_size": 60 }
+          ],
+          "restrictions": { "min_duration": 1800 }
+        }
+      ],
+      "last_updated": "2026-09-17T09:00:00Z"
+    }
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:00Z"
+}

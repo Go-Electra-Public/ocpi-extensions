@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Go-Electra/ocpi-extensions/extensions/end-user-pricing/schemas/2.2.1/authorization-info.schema.json",
+  "title": "OCPI 2.2.1 AuthorizationInfo with the end-user pricing extension",
+  "description": "Response data of POST /tokens/{token_uid}/authorize. Only the extension field and the members it depends on are constrained; the rest of AuthorizationInfo is validated by the OCPI schema, not this one.",
+  "type": "object",
+  "properties": {
+    "allowed": {
+      "type": "string",
+      "enum": ["ALLOWED", "BLOCKED", "EXPIRED", "NO_CREDIT", "NOT_ALLOWED"]
+    },
+    "token": { "type": "object" },
+    "location": { "type": "object" },
+    "authorization_reference": { "type": "string", "maxLength": 36 },
+    "info": { "type": "object" },
+    "end_user_tariff": {
+      "$ref": "tariff.schema.json",
+      "description": "EXTENSION. The tariff the eMSP applies to this driver at this location. Omit when no price can be resolved. Ignored by the CPO when allowed is not ALLOWED."
+    }
+  },
+  "required": ["allowed", "token"]
+}
