@@ -1,0 +1,41 @@
+{
+  "data": {
+    "allowed": "ALLOWED",
+    "token": {
+      "country_code": "FR",
+      "party_id": "CMP",
+      "uid": "12345678",
+      "type": "RFID",
+      "contract_id": "FR-CMP-C12345678-X",
+      "issuer": "Example Mobility",
+      "valid": true,
+      "whitelist": "NEVER",
+      "last_updated": "2026-09-17T09:00:00Z"
+    },
+    "authorization_reference": "a1b2c3d4-0000-4000-8000-000000000001",
+    "end_user_tariff": {
+      "country_code": "FR",
+      "party_id": "CMP",
+      "id": "cmp-elc-dc-2026-09",
+      "currency": "EUR",
+      "type": "REGULAR",
+      "elements": [
+        {
+          "price_components": [
+            { "type": "ENERGY", "price": 0.49, "vat": 20.0, "step_size": 1 }
+          ]
+        },
+        {
+          "price_components": [
+            { "type": "PARKING_TIME", "price": 6.0, "vat": 20.0, "step_size": 60 }
+          ],
+          "restrictions": { "min_duration": 1800 }
+        }
+      ],
+      "last_updated": "2026-09-17T09:00:00Z"
+    }
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:00Z"
+}

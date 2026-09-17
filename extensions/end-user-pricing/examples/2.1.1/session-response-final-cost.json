@@ -1,0 +1,9 @@
+{
+  "data": {
+    "end_user_total_cost": 22.50,
+    "currency": "EUR"
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T10:31:07Z"
+}

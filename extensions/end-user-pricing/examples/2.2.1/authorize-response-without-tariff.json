@@ -1,0 +1,20 @@
+{
+  "data": {
+    "allowed": "ALLOWED",
+    "token": {
+      "country_code": "FR",
+      "party_id": "CMP",
+      "uid": "12345678",
+      "type": "RFID",
+      "contract_id": "FR-CMP-C12345678-X",
+      "issuer": "Example Mobility",
+      "valid": true,
+      "whitelist": "NEVER",
+      "last_updated": "2026-09-17T09:00:00Z"
+    },
+    "authorization_reference": "a1b2c3d4-0000-4000-8000-000000000002"
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:00Z"
+}

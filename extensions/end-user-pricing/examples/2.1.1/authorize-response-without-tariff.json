@@ -1,0 +1,12 @@
+{
+  "data": {
+    "allowed": "ALLOWED",
+    "location": {
+      "location_id": "LOC0001",
+      "evse_uids": ["FR*ELC*E000101"]
+    }
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:00Z"
+}
