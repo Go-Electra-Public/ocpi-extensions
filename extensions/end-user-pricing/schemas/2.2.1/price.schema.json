@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Go-Electra/ocpi-extensions/extensions/end-user-pricing/schemas/2.2.1/price.schema.json",
+  "$id": "https://raw.githubusercontent.com/Go-Electra-Public/ocpi-extensions/main/extensions/end-user-pricing/schemas/2.2.1/price.schema.json",
   "title": "OCPI 2.2.1 Price",
   "type": "object",
   "properties": {
