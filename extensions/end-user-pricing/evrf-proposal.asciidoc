@@ -1,0 +1,334 @@
+= End-user pricing display
+
+Date: 2026-09-30
+
+Author: Electra
+
+Status: Proposal
+
+Extension Number: EVRF-TBD (assigned by the EV Roaming Foundation on submission)
+
+== Motivation
+
+A CPO can show prices on the charge-point screen, for example with OCPP California Pricing (`SetUserPrice` before the session, `RunningCost` during it, `FinalCost` at the end), and increasingly through other channels such as messages sent to the driver during the session.
+
+For a driver who pays the CPO directly, the CPO knows the price. For a **roaming** driver it does not: the price the driver is billed is set by their eMSP, and OCPI gives the eMSP no way to tell the CPO about it.
+
+* The `Tariffs` module, and the Tariff Associations of OCPI 3.0, flow from the CPO to the eMSP. They carry the CPO's price, not the eMSP's price to the driver.
+* `Session.total_cost` and the CDR are the CPO ↔ eMSP amounts. They are not what the driver pays.
+
+So the screen shows either nothing, or the CPO's ad-hoc price, which is not what the roaming driver will be charged. The first leaves the driver blind at the moment they decide to plug in; the second is misleading.
+
+This extension closes that gap with one small module hosted by the eMSP. The CPO asks for the driver's tariff when a token is presented, and for the driver's running cost after each session update. Existing OCPI messages are not modified.
+
+An earlier draft carried these values in the `authorize` and session-push responses. Review with eMSPs showed that authorizing a token and pricing it for the driver are separate services with different latencies, as are ingesting a session update and pricing the session. A dedicated pull endpoint keeps pricing out of those paths, and also covers whitelisted tokens and remote starts, which produce no `authorize` call.
+
+== Domain
+
+=== Use Cases
+
+==== UC1. As a roaming Driver, I want to see the price my eMSP will bill me before I plug in, in order to decide whether to charge here
+
+The charge-point screen is where the decision is made. It should show the driver's own contract price, not the CPO's ad-hoc price.
+
+==== UC2. As a roaming Driver, I want to see the running cost of my session and a provisional final cost, in order to avoid surprises on my invoice
+
+The eMSP computes this cost. The CPO only relays it to the driver, on the screen or through other channels.
+
+==== UC3. As an eMSP, I want to give the CPO the price I bill my drivers without computing it inside authorization or session ingestion, in order to keep those flows fast
+
+The CPO pulls the price in a separate request, which the eMSP answers from state it already holds.
+
+==== UC4. As an eMSP, I want to tell the CPO that a driver is not priced live, in order to avoid useless requests
+
+B2B fleets with month-end discounts, post-paid subscriptions and free-of-charge arrangements have no meaningful live price.
+
+==== UC5. As an eMSP, I want the displayed tariff to change when the price applied to the session changes, in order to reflect promotions activated at session start
+
+For example, a driver activates a 50% energy discount in the eMSP app when starting the session.
+
+==== UC6. As a CPO, I want pricing to be best-effort on both sides, in order to never affect authorization, the session or the CDR
+
+A missing, late or failed pricing answer degrades to "no roaming price shown". The eMSP's invoice to the driver remains the only reference for billing.
+
+=== Design principles
+
+* **The eMSP is the source of truth for the driver's price.** It sets the tariff, computes the cost and bills the driver. The CPO displays what it receives. It MUST NOT compute, correct or complete a driver-facing price from other data; the only computation it performs is adding the taxes carried in the eMSP's own answer (see below).
+* **Reuse OCPI objects.** The driver's tariff is a standard OCPI `Tariff`; the running cost is a standard OCPI `Price`.
+* **The CPO renders.** The eMSP sends structured data. Wording, rounding, layout and translation are the CPO's, as for its own tariffs.
+* **Best effort on both sides.** The price may change after the session starts. The eMSP makes a best effort to return what it will bill, the CPO a best effort to display it. Neither guarantees the displayed figures.
+* **Per-connection opt-in.** The extension is enabled per connection, by agreement.
+* **Direct connections.** This version makes no claim about Hubs. Per the "Extension of OCPI" guidance, middleboxes SHOULD NOT forward requests to unrecognized endpoints.
+
+=== Cost semantics
+
+Two amounts exist in a roaming session and they are unrelated:
+
+[cols="2,1,1",options="header"]
+|===
+|Amount |Between |Where
+|`Session.total_cost`, CDR `total_cost` |CPO ↔ eMSP |standard OCPI
+|`end_user_total_cost` |eMSP ↔ Driver |this extension
+|===
+
+The end-user cost is informational. It creates no settlement obligation and does not affect the CDR. The tariff returned by this extension is the eMSP's contract price and is distinct from the CPO's ad-hoc (`AD_HOC_PAYMENT`) tariff, which remains the CPO's regulated ad-hoc price.
+
+== Use of the extension
+
+=== Use of the extension in OCPI 3.0
+
+Not specified in this version of the document. OCPI 3.0 is not yet released. In the OCPI 3.0 review draft, Tariff Associations (business use cases B2.8 and B2.9) let the CPO announce which of its tariffs apply where and for whom; they do not let the eMSP send its own driver price to the CPO. The need therefore remains in 3.0. A 3.0 section, most likely using Remote Procedure Calls, will be added once OCPI 3.0 is published.
+
+=== Use of the extension in OCPI 2.3.0
+
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted as described in RFC 2119.
+
+==== New enum values
+
+* `ModuleID` (OpenEnum): `end_user_pricing`. The eMSP implements the module with `InterfaceRole` `SENDER`; the CPO calls it.
+
+`end_user_pricing` deliberately carries no party prefix, contrary to the OCPI 2.3.0 advice for custom module IDs: it is meant to be implemented by any CPO and eMSP, and is proposed for standardisation under this name.
+
+==== New object fields
+
+None. No existing OCPI object is modified.
+
+==== New HTTP endpoints
+
+Both endpoints are `GET` requests from the CPO to the eMSP's module URL, use the standard OCPI response envelope and the standard `Authorization: Token` credentials of the connection.
+
+===== Tariffs endpoint
+
+* URL: `{end_user_pricing_url}/tariffs/{country_code}/{party_id}/{location_id}[/{evse_uid}[/{connector_id}]]`
+* Method: `GET`
+* Request payload: none
+* Query parameters:
+** `token_uid` (`CiString(36)`, required): `uid` of the token presented by the driver.
+** `token_type` (`TokenType`, optional, default `RFID`): type of that token. The CPO SHOULD always send it when it knows the type (from `authorize` or `START_SESSION`), since with the wrong type the token is unknown to the eMSP.
+* Path parameters, following the Locations module:
+** `country_code` (`CiString(2)`), `party_id` (`CiString(3)`): of the CPO that owns the Location.
+** `location_id` (`CiString(36)`): `Location.id` of the Location the driver is at.
+** `evse_uid` (`CiString(36)`, optional): narrows the answer to one EVSE, by `EVSE.uid` (not `evse_id`).
+** `connector_id` (`CiString(36)`, optional, requires `evse_uid`): narrows the answer to one connector.
+* Response payload: `data` is an `EndUserTariffs` object.
+
+===== Session cost endpoint
+
+* URL: `{end_user_pricing_url}/session_costs/{country_code}/{party_id}/{session_id}`
+* Method: `GET`
+* Request payload: none
+* Query parameters: none
+* Path parameters: `country_code` (`CiString(2)`) and `party_id` (`CiString(3)`) of the CPO that pushed the session, and `session_id` (`CiString(36)`), the `Session.id` pushed by the CPO.
+* Response payload: `data` is an `EndUserSessionCost` object.
+
+==== New Types
+
+===== PricingStatus _enum_
+
+[cols="1,3,3",options="header"]
+|===
+|Value |Meaning |CPO behaviour
+|`AVAILABLE` |A driver-facing price exists and is included in the response. |Display it. Keep polling the session cost after each session push.
+|`PENDING` |The token or session is priced live, but the eMSP cannot give a figure right now. |Keep the last displayed value, if any. Keep polling after each push.
+|`NOT_AVAILABLE` |No live driver-facing price will exist for this token or session (B2B with month-end discounts, post-paid, free of charge). |Show no roaming price. Do not poll the session cost for this session.
+|===
+
+===== EndUserTariffs _class_
+
+[cols="2,2,1,6",options="header"]
+|===
+|Property |Type |Card. |Description
+|pricing_status |PricingStatus |1 |Whether this token is priced live. `NOT_AVAILABLE` applies to the whole session that follows.
+|tariffs |EndUserTariff |* |One entry per connector of the requested scope the eMSP can price. Empty unless `pricing_status` is `AVAILABLE`.
+|===
+
+===== EndUserTariff _class_
+
+[cols="2,2,1,6",options="header"]
+|===
+|Property |Type |Card. |Description
+|evse_uid |CiString(36) |1 |`EVSE.uid` of the requested Location this tariff applies to.
+|connector_id |CiString(36) |1 |`Connector.id` within that EVSE.
+|tariff |Tariff |1 |The standard OCPI 2.3.0 `Tariff` the eMSP applies to this driver, for this token, at this connector.
+|===
+
+===== EndUserSessionCost _class_
+
+[cols="2,2,1,6",options="header"]
+|===
+|Property |Type |Card. |Description
+|pricing_status |PricingStatus |1 |Whether a driver-facing cost exists for this session.
+|end_user_total_cost |Price |1 if `AVAILABLE` |Cumulative cost of the session to the driver, as of `last_updated`.
+|currency |string(3) |1 if `AVAILABLE` |ISO 4217 code of the currency of `end_user_total_cost`. MUST be the `currency` of the tariffs returned for the session.
+|last_updated |DateTime |1 if `AVAILABLE` |Moment at which the eMSP computed this cost, on its own clock.
+|tariff |Tariff |? |Tariff the eMSP applies to this session as of `last_updated`, for example after a promotion activated at session start. When present, it replaces the tariff from the tariffs endpoint for display. Only allowed with `AVAILABLE`.
+|===
+
+==== Requirements
+
+===== Tariffs
+
+* The tariff MUST be the price the eMSP bills the driver, not the CPO's price to the eMSP.
+* `Tariff.currency` MUST be the currency the eMSP bills the driver in.
+* `Tariff.country_code` and `Tariff.party_id` identify the eMSP that issues the tariff: the values of its `EMSP` role, as exchanged in `credentials`. This differs from the Tariffs module, where they identify the owning CPO.
+* `Tariff.tax_included` follows its standard meaning, applied to the taxes the driver pays:
+** `YES`: the CPO displays `price` as-is. This is the RECOMMENDED value where prices are shown including taxes.
+** `N/A`: no tax applies to this driver (for example some B2B contracts); the CPO displays `price` as-is.
+** `NO`: taxes are added on top. When every `PriceComponent` carries `vat`, the CPO MAY display `price × (1 + vat/100)`. Otherwise it displays `price` and indicates that taxes are excluded.
+* The eMSP MUST NOT set `tax_included` to `N/A`, or omit `vat` under `NO`, because it does not know the tax: the CPO cannot tell this apart from a tax-free price.
+* Tariffs can differ between connectors of the same EVSE. The eMSP SHOULD return one entry per connector it can price, and MUST omit a connector rather than return a placeholder tariff. A `Tariff` with no `elements` MUST NOT be returned.
+* `pricing_status` MUST be `NOT_AVAILABLE` when the eMSP knows that no live price will exist for this token.
+* The tariff MUST be self-contained. `Tariff.id` is opaque to the CPO, which does not look it up, cache it across sessions, or fetch it from the Tariffs module. The tariff is valid for the session about to start only.
+
+===== Session cost
+
+* The displayed cost is `before_taxes` plus the sum of the `amount` of every entry in `taxes`. The eMSP MUST list in `taxes` every tax the driver pays on this session, and MUST send an empty `taxes` list when none applies.
+* The cost is cumulative. It is normally non-decreasing but MAY decrease, for example when a promotion or credit is applied; the CPO displays the value as received.
+* `last_updated` is the eMSP's computation time. The CPO uses it only to discard an answer older than the one it displays.
+* The answer following the `COMPLETED` session push is the provisional final cost. The eMSP's invoice prevails.
+* An eMSP MUST NOT switch a session from `AVAILABLE` back to `NOT_AVAILABLE`; it uses `PENDING` for transient gaps.
+* The eMSP SHOULD return `tariff` whenever the tariff applied to the session differs from the one returned by the tariffs endpoint.
+
+===== When the CPO calls the endpoints
+
+[cols="2,4",options="header"]
+|===
+|Flow |Call
+|Real-time authorization |Tariffs endpoint, immediately after an `ALLOWED` `authorize` response, without delaying the authorization outcome.
+|Whitelisted token (`ALWAYS`, `ALLOWED_OFFLINE`) |Tariffs endpoint, when the token is presented.
+|Remote start |Tariffs endpoint, optionally, on receipt of `START_SESSION`.
+|Each session push (`PUT` / `PATCH /sessions`) |Session cost endpoint, once, only after the push was acknowledged with status code `1000`.
+|===
+
+* The CPO SHOULD request the whole Location before plug-in, since the driver has not chosen a connector yet, and MAY narrow the request once the connector is known.
+* The CPO MUST NOT call the session cost endpoint for a session whose tariffs answer was `NOT_AVAILABLE`, and MUST stop once a session cost answer is `NOT_AVAILABLE`.
+* After `COMPLETED`, the CPO MAY retry once after a short delay if the answer was `PENDING`.
+
+===== Error handling
+
+* The CPO applies a timeout to both requests, agreed per connection. A late answer is discarded.
+* No error, timeout or non-`1000` status on these endpoints may affect the authorization, the session or the CDR.
+* The eMSP MUST answer `2001` for a malformed request (missing `token_uid`, `connector_id` without `evse_uid`). For an unknown token it SHOULD answer `1000` with `NOT_AVAILABLE`; for an unknown Location, EVSE or connector, `1000` with no entry for it; for an unknown session, `1000` with `PENDING`.
+
+===== Display
+
+* The CPO SHOULD display, next to any roaming price or cost from this extension, a notice that the figure is indicative and that the eMSP's conditions apply. This is best-effort, as charge-point screens are not fully configurable. The wording is up to each CPO.
+
+==== Extension discovery in OCPI 2.3.0
+
+* The eMSP lists the module in its version-details endpoints, with `identifier` `end_user_pricing` and `role` `SENDER`, only on connections where the extension has been agreed, as required for custom modules.
+* The eMSP SHOULD also announce `"end_user_pricing": {}` in the `extensions` field of its version-details response, as described in the "Extension of OCPI" document (this field is not part of the OCPI 2.3.0 base specification). OCPI 2.3.0 Platforms do not reject non-specified JSON fields, so this is safe for partners that do not know it.
+* Both parties MAY instead configure the module URL manually for the connection.
+* A CPO MUST NOT call the module on a connection where the extension has not been agreed.
+
+==== Examples
+
+Tariffs request and response (`tax_included` `YES`):
+
+[source,http]
+----
+GET /ocpi/2.3.0/end_user_pricing/tariffs/FR/ABC/LOC001?token_uid=12345678&token_type=RFID
+Authorization: Token <token>
+----
+
+[source,json]
+----
+{
+  "data": {
+    "pricing_status": "AVAILABLE",
+    "tariffs": [
+      {
+        "evse_uid": "3256",
+        "connector_id": "1",
+        "tariff": {
+          "country_code": "FR",
+          "party_id": "XYZ",
+          "id": "xyz-dc-2026-09",
+          "currency": "EUR",
+          "type": "REGULAR",
+          "tax_included": "YES",
+          "elements": [
+            { "price_components": [ { "type": "ENERGY", "price": 0.588, "vat": 20.0, "step_size": 1 } ] },
+            {
+              "price_components": [ { "type": "PARKING_TIME", "price": 7.2, "vat": 20.0, "step_size": 1 } ],
+              "restrictions": { "min_duration": 1800 }
+            }
+          ],
+          "last_updated": "2026-09-17T09:00:00Z"
+        }
+      }
+    ]
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:00Z"
+}
+----
+
+Session cost response:
+
+[source,json]
+----
+{
+  "data": {
+    "pricing_status": "AVAILABLE",
+    "end_user_total_cost": {
+      "before_taxes": 4.10,
+      "taxes": [ { "name": "VAT", "percentage": 20.0, "amount": 0.82 } ]
+    },
+    "currency": "EUR",
+    "last_updated": "2026-09-17T09:12:00Z"
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:03Z"
+}
+----
+
+Token not priced live:
+
+[source,json]
+----
+{
+  "data": { "pricing_status": "NOT_AVAILABLE", "tariffs": [] },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:00Z"
+}
+----
+
+=== Backports to OCPI 2.2.1 and 2.1.1
+
+Most roaming connections still run OCPI 2.2.1 or 2.1.1. The same module is specified for them, with the same endpoints, paths, `PricingStatus` and rules; only the tariff and cost shapes follow each version. Full documents: https://github.com/Go-Electra-Public/ocpi-extensions/tree/main/extensions/end-user-pricing.
+
+[cols="1,2,2",options="header"]
+|===
+| |OCPI 2.2.1 |OCPI 2.1.1
+|Tariff prices |standard: excluding VAT, `vat` per component (omitted = no VAT) |VAT-inclusive, stated by `prices_incl_vat: true` (2.1.1 has no VAT field)
+|Session cost |`Price { excl_vat, incl_vat }`, `incl_vat` required |`end_user_total_cost_incl_vat`: number
+|Tariff `country_code` / `party_id` |of the eMSP role |not present in 2.1.1
+|Discovery |module in version details, `role: SENDER` |module in version details
+|===
+
+== Rendering (informative)
+
+How a CPO renders the objects it receives is at its discretion. Notes from one implementation, a charge-point screen driven by OCPP 1.6 California Pricing:
+
+* `ENERGY`, `PARKING_TIME`, `TIME` and `FLAT` are all renderable; energy-based tariffs render best.
+* Simple restrictions such as `min_duration` on a parking component are rendered as a threshold; complex combinations may be summarised or left out.
+* A fee starting when the vehicle stops charging is expressed with `PARKING_TIME`. A fee based on state of charge cannot be expressed in OCPI and only shows in the running cost.
+* When part of a tariff cannot be rendered, the rest is shown. Free-text fields are not used.
+* Other channels, such as messages during the session, may show the full tariff, including a `tariff` received from the session cost endpoint.
+* What is shown for a driver whose eMSP declares `NOT_AVAILABLE` is up to each CPO.
+
+== References
+
+[cols="1,3,3"]
+|===
+| Abbreviation | Title | URL
+|JSON |The JSON data interchange syntax |https://ecma-international.org/publications-and-standards/standards/ecma-404/
+|OCPI 2.3.0 |Open Charge Point Interface 2.3.0 |https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
+|EVRF-000 |Extension of OCPI |https://ocpi.github.io/
+|OCPP 1.6 California Pricing |OCA California Pricing Requirements |https://openchargealliance.org/
+|RFC 2119 |Key words for use in RFCs to Indicate Requirement Levels |https://www.rfc-editor.org/rfc/rfc2119
+|===

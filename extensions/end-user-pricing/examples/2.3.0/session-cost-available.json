@@ -1,0 +1,14 @@
+{
+  "data": {
+    "pricing_status": "AVAILABLE",
+    "end_user_total_cost": {
+      "before_taxes": 4.10,
+      "taxes": [ { "name": "VAT", "percentage": 20.0, "amount": 0.82 } ]
+    },
+    "currency": "EUR",
+    "last_updated": "2026-09-17T09:12:00Z"
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:03Z"
+}

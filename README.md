@@ -16,7 +16,7 @@ adds a custom module, enabled per connection by agreement.
 
 | Extension | Status | Versions | Spec |
 | --- | --- | --- | --- |
-| End-user pricing display | Draft, under review | OCPI 2.1.1, 2.2.1 | [`extensions/end-user-pricing`](extensions/end-user-pricing) |
+| End-user pricing display | Draft, under review | OCPI 2.1.1, 2.2.1, 2.3.0 | [`extensions/end-user-pricing`](extensions/end-user-pricing) |
 
 ## How these specs are written
 

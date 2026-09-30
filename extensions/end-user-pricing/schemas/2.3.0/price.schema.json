@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Go-Electra-Public/ocpi-extensions/main/extensions/end-user-pricing/schemas/2.3.0/price.schema.json",
+  "title": "OCPI 2.3.0 Price",
+  "type": "object",
+  "properties": {
+    "before_taxes": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price excluding taxes."
+    },
+    "taxes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/taxAmount" },
+      "description": "Every tax the driver pays. Empty when none applies. Displayed cost = before_taxes + sum of amount."
+    }
+  },
+  "required": ["before_taxes"],
+  "additionalProperties": false,
+  "$defs": {
+    "taxAmount": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "account_number": { "type": "string" },
+        "percentage": { "type": "number", "minimum": 0 },
+        "amount": { "type": "number" }
+      },
+      "required": ["name", "amount"]
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Go-Electra-Public/ocpi-extensions/main/extensions/end-user-pricing/schemas/2.3.0/end-user-session-cost.schema.json",
+  "title": "EndUserSessionCost (OCPI 2.3.0)",
+  "description": "data of GET {end_user_pricing_url}/session_costs/{country_code}/{party_id}/{session_id} (spec §4.2).",
+  "type": "object",
+  "properties": {
+    "pricing_status": { "$ref": "pricing-status.schema.json" },
+    "end_user_total_cost": {
+      "allOf": [{ "$ref": "price.schema.json" }],
+      "required": ["taxes"],
+      "description": "Cumulative cost of the session to the driver, as of last_updated."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{3}$",
+      "description": "ISO 4217 code. MUST be the currency of the tariffs returned for the session."
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Moment at which the eMSP computed this cost, on its own clock."
+    },
+    "tariff": {
+      "$ref": "tariff.schema.json",
+      "description": "Tariff the eMSP applies to this session as of last_updated. When present, it replaces the §3 tariff for display."
+    }
+  },
+  "required": ["pricing_status"],
+  "if": {
+    "properties": { "pricing_status": { "const": "AVAILABLE" } }
+  },
+  "then": {
+    "required": ["end_user_total_cost", "currency", "last_updated"]
+  },
+  "else": {
+    "not": {
+      "anyOf": [
+        { "required": ["end_user_total_cost"] },
+        { "required": ["currency"] },
+        { "required": ["last_updated"] },
+        { "required": ["tariff"] }
+      ]
+    },
+    "description": "Cost fields and tariff are present only with AVAILABLE."
+  }
+}

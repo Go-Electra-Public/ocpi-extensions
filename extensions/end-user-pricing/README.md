@@ -8,7 +8,8 @@
 | | |
 | --- | --- |
 | Status | Draft, under review, not ready for implementation |
-| OCPI versions | [2.1.1](ocpi-2.1.1.md) · [2.2.1](ocpi-2.2.1.md) |
+| OCPI versions | [2.1.1](ocpi-2.1.1.md) · [2.2.1](ocpi-2.2.1.md) · [2.3.0](ocpi-2.3.0.md) |
+| EV Roaming Foundation proposal | [`evrf-proposal.asciidoc`](evrf-proposal.asciidoc) (OCPI 2.3.0, EVRF extension template) |
 | Direction | CPO → eMSP requests; eMSP answers (the eMSP is the **sender** of the data) |
 | New module | `end_user_pricing`, hosted by the eMSP, two GET endpoints |
 | Modified messages | none |
@@ -127,7 +128,7 @@ Two amounts exist in a roaming session and they are unrelated:
 | Amount | Between | Where |
 | --- | --- | --- |
 | `Session.total_cost`, CDR `total_cost` | CPO ↔ eMSP | standard OCPI |
-| `end_user_total_cost` (2.2.1) / `end_user_total_cost_incl_vat` (2.1.1), session cost endpoint | eMSP ↔ driver | this extension |
+| `end_user_total_cost` (2.2.1, 2.3.0) / `end_user_total_cost_incl_vat` (2.1.1), session cost endpoint | eMSP ↔ driver | this extension |
 
 The end-user cost is **informational**. It exists to show the driver a plausible running figure.
 The eMSP's own invoice to the driver prevails, and this extension creates no settlement
@@ -141,7 +142,8 @@ the extension.
 
 ## Scope
 
-**In scope:** direct OCPI 2.1.1 and 2.2.1 connections between an eMSP and a CPO.
+**In scope:** direct OCPI 2.1.1, 2.2.1 and 2.3.0 connections between an eMSP and a CPO. OCPI 3.0
+will be covered once it is released.
 
 **Out of scope:**
 
@@ -162,6 +164,7 @@ the eMSP's indicative price and remain the eMSP's responsibility.
 
 ## Where to start
 
+- eMSP on OCPI 2.3.0 → [`ocpi-2.3.0.md`](ocpi-2.3.0.md)
 - eMSP on OCPI 2.2.1 → [`ocpi-2.2.1.md`](ocpi-2.2.1.md)
 - eMSP on OCPI 2.1.1 → [`ocpi-2.1.1.md`](ocpi-2.1.1.md)
 - Machine-readable definitions → [`schemas/`](schemas)
