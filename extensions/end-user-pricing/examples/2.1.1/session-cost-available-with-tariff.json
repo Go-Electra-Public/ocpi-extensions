@@ -1,0 +1,30 @@
+{
+  "data": {
+    "pricing_status": "AVAILABLE",
+    "end_user_total_cost_incl_vat": 2.46,
+    "currency": "EUR",
+    "last_updated": "2026-09-17T09:12:00Z",
+    "prices_incl_vat": true,
+    "tariff": {
+      "id": "xyz-dc-2026-09-promo50",
+      "currency": "EUR",
+      "elements": [
+        {
+          "price_components": [
+            { "type": "ENERGY", "price": 0.295, "step_size": 1 }
+          ]
+        },
+        {
+          "price_components": [
+            { "type": "PARKING_TIME", "price": 7.2, "step_size": 60 }
+          ],
+          "restrictions": { "min_duration": 1800 }
+        }
+      ],
+      "last_updated": "2026-09-17T09:05:00Z"
+    }
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:03Z"
+}

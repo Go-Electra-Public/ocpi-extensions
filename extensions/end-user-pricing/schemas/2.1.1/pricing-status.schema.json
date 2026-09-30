@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Go-Electra-Public/ocpi-extensions/main/extensions/end-user-pricing/schemas/2.1.1/pricing-status.schema.json",
+  "title": "PricingStatus",
+  "description": "Whether, and when, a driver-facing price exists (spec §1.1).",
+  "type": "string",
+  "enum": ["AVAILABLE", "PENDING", "NOT_AVAILABLE"]
+}

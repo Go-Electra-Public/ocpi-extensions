@@ -1,0 +1,11 @@
+{
+  "data": {
+    "pricing_status": "AVAILABLE",
+    "end_user_total_cost": { "excl_vat": 4.10, "incl_vat": 4.92 },
+    "currency": "EUR",
+    "last_updated": "2026-09-17T09:12:00Z"
+  },
+  "status_code": 1000,
+  "status_message": "Success",
+  "timestamp": "2026-09-17T09:12:03Z"
+}

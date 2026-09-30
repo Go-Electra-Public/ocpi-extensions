@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Go-Electra-Public/ocpi-extensions/main/extensions/end-user-pricing/schemas/2.2.1/price.schema.json",
+  "title": "OCPI 2.2.1 Price",
+  "type": "object",
+  "properties": {
+    "excl_vat": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price excluding VAT."
+    },
+    "incl_vat": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price including VAT. Optional in standard OCPI; EndUserSessionCost requires it, and it equals excl_vat when no VAT applies."
+    }
+  },
+  "required": ["excl_vat"],
+  "additionalProperties": false
+}
